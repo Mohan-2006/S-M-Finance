@@ -1,0 +1,126 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: /users/{userId}/settings/current
+// Document ID: current
+// Fields:
+//   - startingCapital: number (required) - Starting capital for fantasy finance.
+//   - monthlyBudget: number (required) - Monthly budget for personal expenses.
+//   - savingsGoal: number (required) - Monthly savings goal.
+//
+// Collection: /users/{userId}/fantasyRecords/{recordId}
+// Document ID: auto-generated
+// Fields:
+//   - date: string (required, format: date) - Date of the record.
+//   - walletBalance: number (required) - Current wallet balance.
+//   - deposit: number (required) - Amount deposited.
+//   - withdraw: number (required) - Amount withdrawn.
+//   - contestEntry: number (required) - Amount spent on contest entry.
+//   - contestWinning: number (required) - Amount won from contests.
+//   - affiliateIncome: number (required) - Income from affiliate programs.
+//   - uid: string (required) - User ID of the owner.
+//
+// Collection: /users/{userId}/expenseRecords/{recordId}
+// Document ID: auto-generated
+// Fields:
+//   - date: string (required, format: date) - Date of the record.
+//   - papaMoney: number (required) - Money received from Papa.
+//   - freelanceIncome: number (required) - Income from freelance work.
+//   - expenseAmount: number (required) - Amount spent.
+//   - category: string (required, enum: ["Food", "Travel", "Recharge", "Shopping", "Other"]) - Category of the expense.
+//   - notes: string (optional) - Additional notes.
+//   - uid: string (required) - User ID of the owner.
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}.*");
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidSettings(data) {
+      return hasRequiredFields(['startingCapital', 'monthlyBudget', 'savingsGoal']) &&
+             hasOnlyAllowedFields(['startingCapital', 'monthlyBudget', 'savingsGoal']) &&
+             data.startingCapital is number &&
+             data.monthlyBudget is number &&
+             data.savingsGoal is number;
+    }
+
+    function isValidFantasyRecord(data) {
+      return hasRequiredFields(['date', 'walletBalance', 'deposit', 'withdraw', 'contestEntry', 'contestWinning', 'affiliateIncome', 'uid']) &&
+             hasOnlyAllowedFields(['date', 'walletBalance', 'deposit', 'withdraw', 'contestEntry', 'contestWinning', 'affiliateIncome', 'uid']) &&
+             isValidDateString(data.date) &&
+             data.walletBalance is number &&
+             data.deposit is number &&
+             data.withdraw is number &&
+             data.contestEntry is number &&
+             data.contestWinning is number &&
+             data.affiliateIncome is number &&
+             data.uid is string && data.uid == request.auth.uid;
+    }
+
+    function isValidExpenseRecord(data) {
+      return hasRequiredFields(['date', 'papaMoney', 'freelanceIncome', 'expenseAmount', 'category', 'uid']) &&
+             hasOnlyAllowedFields(['date', 'papaMoney', 'freelanceIncome', 'expenseAmount', 'category', 'notes', 'uid']) &&
+             isValidDateString(data.date) &&
+             data.papaMoney is number &&
+             data.freelanceIncome is number &&
+             data.expenseAmount is number &&
+             data.category in ['Food', 'Travel', 'Recharge', 'Shopping', 'Other'] &&
+             data.uid is string && data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      match /settings/current {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidSettings(request.resource.data);
+      }
+
+      match /fantasyRecords/{recordId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidFantasyRecord(request.resource.data);
+        allow update: if isOwner(userId) && isValidFantasyRecord(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /expenseRecords/{recordId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidExpenseRecord(request.resource.data);
+        allow update: if isOwner(userId) && isValidExpenseRecord(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

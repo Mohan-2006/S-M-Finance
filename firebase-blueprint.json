@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "UserSettings": {
+      "title": "User Settings",
+      "description": "User-specific financial settings and goals.",
+      "type": "object",
+      "properties": {
+        "startingCapital": { "type": "number", "description": "Starting capital for fantasy finance." },
+        "monthlyBudget": { "type": "number", "description": "Monthly budget for personal expenses." },
+        "savingsGoal": { "type": "number", "description": "Monthly savings goal." }
+      },
+      "required": ["startingCapital", "monthlyBudget", "savingsGoal"]
+    },
+    "FantasyRecord": {
+      "title": "Fantasy Finance Record",
+      "description": "A daily entry for fantasy finance tracking.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "Date of the record." },
+        "walletBalance": { "type": "number", "description": "Current wallet balance." },
+        "deposit": { "type": "number", "description": "Amount deposited." },
+        "withdraw": { "type": "number", "description": "Amount withdrawn." },
+        "contestEntry": { "type": "number", "description": "Amount spent on contest entry." },
+        "contestWinning": { "type": "number", "description": "Amount won from contests." },
+        "affiliateIncome": { "type": "number", "description": "Income from affiliate programs." },
+        "uid": { "type": "string", "description": "User ID of the owner." }
+      },
+      "required": ["date", "walletBalance", "deposit", "withdraw", "contestEntry", "contestWinning", "affiliateIncome", "uid"]
+    },
+    "ExpenseRecord": {
+      "title": "Personal Expense Record",
+      "description": "An entry for personal income and expenses.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "Date of the record." },
+        "papaMoney": { "type": "number", "description": "Money received from Papa." },
+        "freelanceIncome": { "type": "number", "description": "Income from freelance work." },
+        "expenseAmount": { "type": "number", "description": "Amount spent." },
+        "category": { "type": "string", "enum": ["Food", "Travel", "Recharge", "Shopping", "Other"], "description": "Category of the expense." },
+        "notes": { "type": "string", "description": "Additional notes." },
+        "uid": { "type": "string", "description": "User ID of the owner." }
+      },
+      "required": ["date", "papaMoney", "freelanceIncome", "expenseAmount", "category", "uid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/settings/current": {
+      "schema": "UserSettings",
+      "description": "User's financial settings."
+    },
+    "/users/{userId}/fantasyRecords/{recordId}": {
+      "schema": "FantasyRecord",
+      "description": "Daily fantasy finance records."
+    },
+    "/users/{userId}/expenseRecords/{recordId}": {
+      "schema": "ExpenseRecord",
+      "description": "Personal income and expense records."
+    }
+  }
+}
